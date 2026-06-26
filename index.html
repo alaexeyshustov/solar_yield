@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leipzig Solar Break-Even Calculator</title>
+<style>
+  body { 
+    font-family: system-ui, -apple-system, sans-serif; 
+    max-width: 500px; 
+    margin: 2rem auto; 
+    padding: 1.5rem; 
+    background: #ffffff; 
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    color: #333;
+  }
+  h2 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    text-align: center;
+  }
+  label { 
+    display: block; 
+    margin-top: 1.2rem; 
+    font-weight: 600; 
+    font-size: 0.9rem;
+  }
+  input, select { 
+    width: 100%; 
+    padding: 0.6rem; 
+    margin-top: 0.4rem; 
+    box-sizing: border-box; 
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  button { 
+    margin-top: 1.8rem; 
+    width: 100%; 
+    padding: 0.8rem; 
+    background: #0d9488; 
+    color: white; 
+    border: none; 
+    border-radius: 6px; 
+    font-size: 1rem; 
+    font-weight: bold;
+    cursor: pointer; 
+    transition: background 0.2s;
+  }
+  button:hover { 
+    background: #0f766e; 
+  }
+  #results { 
+    margin-top: 1.5rem; 
+    padding: 1rem; 
+    background: #f0fdfa; 
+    border: 1px solid #ccfbf1;
+    border-radius: 6px; 
+    display: none;
+    line-height: 1.6;
+  }
+  .warning { 
+    color: #b91c1c; 
+    font-weight: bold; 
+  }
+</style>
+</head>
+<body>
+  <h2>Leipzig Solar Break-Even Calculator</h2>
+  
+  <label for="panelType">Panel Type (2026 Average Prices):</label>
+  <select id="panelType">
+    <option value="60" data-watt="400">High-Efficiency TOPCon 400W (€60 / panel)</option>
+    <option value="66" data-watt="400">Full Black 400W (€66 / panel)</option>
+    <option value="52" data-watt="400">Mainstream PERC 400W (€52 / panel)</option>
+  </select>
+
+  <label for="numPanels">Number of Panels:</label>
+  <input type="number" id="numPanels" value="50" min="1">
+
+  <label for="elecPrice">Current Electricity Price (€/kWh):</label>
+  <input type="number" id="elecPrice" value="0.35" step="0.01">
+
+  <label for="consumption">Annual Building Consumption (kWh):</label>
+  <input type="number" id="consumption" value="25000" min="1">
+
+  <label for="installCost">Installation & Inverter Cost (€):</label>
+  <input type="number" id="installCost" value="12000" min="0">
+
+  <label for="maintCost">Annual Maintenance Cost (€):</label>
+  <input type="number" id="maintCost" value="300" min="0">
+
+  <label for="longevity">Panel Longevity (Years):</label>
+  <input type="number" id="longevity" value="25" min="1">
+
+  <button onclick="calculate()">Calculate ROI</button>
+
+  <div id="results"></div>
+
+  <script>
+    function calculate() {
+      // 1. Fetch values from inputs
+      const panelSelect = document.getElementById('panelType');
+      const panelPrice = parseFloat(panelSelect.value);
+      const panelWattage = parseFloat(panelSelect.options[panelSelect.selectedIndex].getAttribute('data-watt'));
+      const numPanels = parseFloat(document.getElementById('numPanels').value);
+      const elecPrice = parseFloat(document.getElementById('elecPrice').value);
+      const consumption = parseFloat(document.getElementById('consumption').value);
+      const installCost = parseFloat(document.getElementById('installCost').value);
+      const maintCost = parseFloat(document.getElementById('maintCost').value);
+      const longevity = parseFloat(document.getElementById('longevity').value);
+
+      // 2. Calculate Upfront Costs
+      const totalPanelCost = panelPrice * numPanels;
+      const totalUpfrontCost = totalPanelCost + installCost;
+
+      // 3. Calculate Energy Yield (Assuming ~900 kWh yield per kWp annually in Leipzig)
+      const systemKwp = (numPanels * panelWattage) / 1000;
+      const annualGeneration = systemKwp * 900; 
+
+      // 4. Calculate Financial Savings
+      const usableGeneration = Math.min(annualGeneration, consumption); // Caps savings at consumption level
+      const grossSavings = usableGeneration * elecPrice;
+      const netSavings = grossSavings - maintCost;
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+
+      // 5. Handle Negative ROI
+      if (netSavings <= 0) {
+        resultsDiv.innerHTML = `<span class="warning">Annual net savings are negative or zero. The system will not break even. Maintenance costs are outstripping your electricity savings.</span>`;
+        return;
+      }
+
+      // 6. Calculate Break-Even
+      const breakEvenYears = totalUpfrontCost / netSavings;
+
+      // 7. Render Output
+      let html = `<strong>Total Upfront Cost:</strong> €${totalUpfrontCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}<br>`;
+      html += `<strong>Estimated Annual Yield:</strong> ${annualGeneration.toLocaleString(undefined, {maximumFractionDigits: 0})} kWh<br>`;
+      html += `<strong>Annual Net Savings:</strong> €${netSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}<br><br>`;
+      
+      if (breakEvenYears > longevity) {
+        html += `<span class="warning"><strong>Break-Even Point:</strong> ${breakEvenYears.toFixed(1)} years</span><br>`;
+        html += `<small class="warning">Warning: The break-even point exceeds the panel lifespan of ${longevity} years.</small>`;
+      } else {
+        html += `<strong>Break-Even Point:</strong> ${breakEvenYears.toFixed(1)} years`;
+      }
+
+      resultsDiv.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
