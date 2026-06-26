@@ -6,428 +6,499 @@
           <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" />
           <path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
-        <h1>HeliosYield</h1>
+        <h1>HeliosYield Pro</h1>
       </div>
-      <p class="subtitle">Solar ROI & Break-Even Calculator</p>
+      <p class="subtitle">German Solar ROI & Technical Analysis (2026 Standards)</p>
     </header>
 
     <main class="calculator-grid">
-      <!-- INPUT SECTION -->
-      <section class="card glass input-panel">
-        <div class="section-title-group">
-          <span class="number-badge">1</span>
-          <h2>System Parameters</h2>
-        </div>
+      <!-- INPUT SECTION COMPONENT -->
+      <Form
+        v-model:selectedPanelId="selectedPanelId"
+        v-model:selectedModel="selectedModel"
+        v-model:roofArea="roofArea"
+        v-model:firewallType="firewallType"
+        v-model:numPanels="numPanels"
+        v-model:elecPrice="elecPrice"
+        v-model:consumption="consumption"
+        v-model:installCost="installCost"
+        v-model:longevity="longevity"
+        v-model:includeBattery="includeBattery"
+        v-model:batteryCapacity="batteryCapacity"
+        v-model:tariffType="tariffType"
+        :maxFittingPanels="maxFittingPanels"
+        :recommendedBatterySize="recommendedBatterySize"
+        :panelTypes="panelTypes"
+        :selectedPanel="selectedPanel"
+      />
 
-        <div class="form-group">
-          <label for="city">Region / Solar Yield Location</label>
-          <div class="select-wrapper">
-            <select id="city" v-model="selectedCity">
-              <option v-for="city in cities" :key="city.name" :value="city">
-                {{ city.name }} (~{{ city.yield }} kWh/kWp)
-              </option>
-            </select>
+      <!-- RESULTS SECTION COMPONENTS -->
+      <div class="results-panel">
+        <!-- Fiscal status header -->
+        <div class="fiscal-header-badges">
+          <div class="fiscal-badge vat">
+            <span class="f-dot"></span>
+            <span>0% VAT § 12 Abs. 3 UStG</span>
+          </div>
+          <div class="fiscal-badge tax-exempt" v-if="systemKwp <= 30">
+            <span class="f-dot"></span>
+            <span>Income Tax Exempt § 3 Nr. 72 EStG</span>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Solar Panel Type (2026 Prices)</label>
-          <div class="panel-type-grid">
-            <div 
-              v-for="panel in panelTypes" 
-              :key="panel.id"
-              class="panel-card"
-              :class="{ active: selectedPanelId === panel.id }"
-              @click="selectedPanelId = panel.id"
-            >
-              <div class="panel-card-header">
-                <span class="panel-badge" :class="panel.class">{{ panel.badge }}</span>
-                <span class="panel-price">€{{ panel.price }}</span>
-              </div>
-              <p class="panel-name">{{ panel.name }}</p>
-              <p class="panel-power">{{ panel.wattage }}W Peak Power</p>
-            </div>
-          </div>
-        </div>
+        <Calculator
+          :totalSubsidies="totalSubsidies"
+          :solarSubsidy="solarSubsidy"
+          :batterySubsidy="batterySubsidy"
+          :netUpfrontCost="netUpfrontCost"
+          :grossUpfrontCost="grossUpfrontCost"
+          :annualGeneration="annualGeneration"
+          :systemKwp="systemKwp"
+          :netSavingsYear1="netSavingsYear1"
+          :selfConsumptionRate="selfConsumptionRate"
+          :annualOPEX="annualOPEX"
+          :breakEvenYears="breakEvenYears"
+          :longevity="longevity"
+          :breakEvenStatusClass="breakEvenStatusClass"
+          :breakEvenTitle="breakEvenTitle"
+          :breakEvenDescription="breakEvenDescription"
+        />
 
-        <div class="form-group">
-          <div class="label-val-row">
-            <label for="numPanels">Number of Panels</label>
-            <span class="value-display">{{ numPanels }} panels</span>
-          </div>
-          <input type="range" id="numPanels" v-model.number="numPanels" min="5" max="150" step="5" class="range-slider">
-          <div class="slider-ticks">
-            <span>5</span>
-            <span>75</span>
-            <span>150</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-val-row">
-            <label for="elecPrice">Current Electricity Price</label>
-            <span class="value-display">€{{ elecPrice.toFixed(2) }} / kWh</span>
-          </div>
-          <input type="range" id="elecPrice" v-model.number="elecPrice" min="0.10" max="0.60" step="0.01" class="range-slider">
-          <div class="slider-ticks">
-            <span>€0.10</span>
-            <span>€0.35</span>
-            <span>€0.60</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-val-row">
-            <label for="consumption">Annual Electricity Consumption</label>
-            <span class="value-display">{{ consumption.toLocaleString() }} kWh</span>
-          </div>
-          <input type="range" id="consumption" v-model.number="consumption" min="1000" max="50000" step="500" class="range-slider">
-          <div class="slider-ticks">
-            <span>1k</span>
-            <span>25k</span>
-            <span>50k</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="label-val-row">
-            <label for="installCost">Installation & Inverter Cost</label>
-            <span class="value-display">€{{ installCost.toLocaleString() }}</span>
-          </div>
-          <input type="range" id="installCost" v-model.number="installCost" min="1000" max="30000" step="500" class="range-slider">
-          <div class="slider-ticks">
-            <span>€1k</span>
-            <span>€15k</span>
-            <span>€30k</span>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group half">
-            <label for="maintCost">Annual Maintenance</label>
-            <div class="input-prefix-wrapper">
-              <span class="prefix">€</span>
-              <input type="number" id="maintCost" v-model.number="maintCost" min="0">
-            </div>
-          </div>
-          <div class="form-group half">
-            <label for="longevity">Lifespan (Years)</label>
-            <input type="number" id="longevity" v-model.number="longevity" min="5" max="40">
-          </div>
-        </div>
-      </section>
-
-      <!-- RESULTS SECTION -->
-      <section class="results-panel">
-        <div class="card glass summary-cards-container">
-          <div class="section-title-group">
-            <span class="number-badge secondary">2</span>
-            <h2>ROI Forecast</h2>
-          </div>
-
-          <div class="metrics-grid">
-            <div class="metric-box">
-              <span class="metric-label">Total Upfront Investment</span>
-              <span class="metric-val">€{{ totalUpfrontCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
-              <span class="metric-sub">Panels: €{{ totalPanelCost.toLocaleString() }} + Install: €{{ installCost.toLocaleString() }}</span>
-            </div>
-
-            <div class="metric-box">
-              <span class="metric-label">Annual Generation</span>
-              <span class="metric-val text-primary-color">{{ Math.round(annualGeneration).toLocaleString() }} <span class="unit">kWh</span></span>
-              <span class="metric-sub">System Size: {{ systemKwp.toFixed(2) }} kWp</span>
-            </div>
-
-            <div class="metric-box" :class="{ warning: netSavings <= 0 }">
-              <span class="metric-label">Annual Net Savings</span>
-              <span class="metric-val text-secondary-color" v-if="netSavings > 0">
-                +€{{ netSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-              </span>
-              <span class="metric-val text-danger" v-else>
-                €{{ netSavings.toLocaleString() }}
-              </span>
-              <span class="metric-sub" v-if="netSavings > 0">
-                Self-consumption capped at {{ Math.round(Math.min(100, (consumption / annualGeneration) * 100)) }}%
-              </span>
-              <span class="metric-sub" v-else>
-                Maintenance costs exceed savings
-              </span>
-            </div>
-          </div>
-
-          <!-- BREAK EVEN SHIELD -->
-          <div class="break-even-shield" :class="breakEvenStatusClass">
-            <div class="shield-icon">
-              <svg v-if="netSavings <= 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <svg v-else-if="breakEvenYears > longevity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="shield-text">
-              <h3>{{ breakEvenTitle }}</h3>
-              <p>{{ breakEvenDescription }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- VISUAL CHART CARD -->
-        <div class="card glass chart-card" v-if="netSavings > 0">
-          <h3>Cumulative Cash Flow Projection</h3>
-          <p class="chart-desc">Upfront cost recovery timeline</p>
-          
-          <div class="svg-container">
-            <svg class="roi-chart" viewBox="0 0 500 240" ref="chartSvg">
-              <!-- Grid lines -->
-              <line x1="40" y1="20" x2="480" y2="20" class="grid-line" />
-              <line x1="40" y1="70" x2="480" y2="70" class="grid-line" />
-              <line x1="40" y1="120" x2="480" y2="120" class="grid-line" />
-              <line x1="40" y1="170" x2="480" y2="170" class="grid-line" />
-              <line x1="40" y1="210" x2="480" y2="210" class="grid-line border" />
-
-              <!-- Savings line (Green) -->
-              <path :d="savingsPath" fill="none" class="chart-path savings-line" stroke-width="3" />
-
-              <!-- Costs line (Red) -->
-              <path :d="costsPath" fill="none" class="chart-path costs-line" stroke-width="2.5" stroke-dasharray="4 2" />
-
-              <!-- Intersection point (Break-even dot) -->
-              <g class="intersection-dot-group" v-if="breakEvenYears <= longevity" :style="{ transform: `translate(${breakEvenCoords.x}px, ${breakEvenCoords.y}px)` }">
-                <circle cx="0" cy="0" r="8" class="pulse-ring" />
-                <circle cx="0" cy="0" r="5" class="center-dot" />
-              </g>
-
-              <!-- Chart Interactive Nodes (Dots for each 5-year step) -->
-              <circle 
-                v-for="node in chartNodes" 
-                :key="node.year" 
-                :cx="node.x" 
-                :cy="node.y" 
-                r="4.5" 
-                class="node-dot"
-                :class="node.type"
-                @mouseenter="hoveredNode = node"
-                @mouseleave="hoveredNode = null"
-              />
-
-              <!-- Tooltip overlay -->
-              <foreignObject v-if="hoveredNode" :x="tooltipX" :y="tooltipY" width="120" height="70" class="chart-tooltip-wrapper">
-                <div class="chart-tooltip">
-                  <span class="tooltip-year">Year {{ hoveredNode.year }}</span>
-                  <span class="tooltip-val" :class="hoveredNode.type">
-                    {{ hoveredNode.type === 'savings' ? 'Saved: ' : 'Spent: ' }}€{{ Math.round(hoveredNode.val).toLocaleString() }}
-                  </span>
-                </div>
-              </foreignObject>
-
-              <!-- X-Axis Labels -->
-              <text x="40" y="230" class="axis-label">0y</text>
-              <text x="150" y="230" class="axis-label">{{ Math.round(longevity * 0.25) }}y</text>
-              <text x="260" y="230" class="axis-label">{{ Math.round(longevity * 0.5) }}y</text>
-              <text x="370" y="230" class="axis-label">{{ Math.round(longevity * 0.75) }}y</text>
-              <text x="480" y="230" class="axis-label text-right">{{ longevity }}y</text>
-            </svg>
-          </div>
-          <div class="legend">
-            <span class="legend-item"><span class="legend-line costs"></span>Cumulative Cost</span>
-            <span class="legend-item"><span class="legend-line savings"></span>Cumulative Net Savings</span>
-            <span class="legend-item" v-if="breakEvenYears <= longevity"><span class="legend-dot"></span>Break-Even Point</span>
-          </div>
-        </div>
-      </section>
+        <Chart
+          v-if="netSavingsYear1 > 0"
+          :lifecycleData="lifecycleData"
+          :longevity="longevity"
+          :includeBattery="includeBattery"
+          :netUpfrontCost="netUpfrontCost"
+          :breakEvenYears="breakEvenYears"
+          :selectedPanel="selectedPanel"
+          :annualOPEX="annualOPEX"
+        />
+      </div>
     </main>
+
+    <!-- REFERENCE DATA SECTION -->
+    <section class="card glass reference-section animate-fade-in">
+      <div class="reference-header" @click="showReference = !showReference">
+        <div class="reference-title-group">
+          <svg class="book-icon" :class="{ rotate: showReference }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+          </svg>
+          <h2>2026 German PV Market Reference Data</h2>
+        </div>
+        <button class="toggle-btn">{{ showReference ? 'Hide Data' : 'Show Data' }}</button>
+      </div>
+
+      <div v-if="showReference" class="reference-content animate-fade-in">
+        <div class="tab-selectors">
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'panels' }" 
+            @click="activeTab = 'panels'"
+          >
+            Solar Modules Comparison (Section 3.1)
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'battery' }" 
+            @click="activeTab = 'battery'"
+          >
+            Battery Sizing Guidelines (Section 6.3)
+          </button>
+        </div>
+
+        <!-- Panels Tab -->
+        <div v-if="activeTab === 'panels'" class="table-container animate-fade-in">
+          <table class="market-table">
+            <thead>
+              <tr>
+                <th>Manufacturer & Model</th>
+                <th>Tech Standard</th>
+                <th>Capacity (W)</th>
+                <th>Efficiency (%)</th>
+                <th>Annual Degradation</th>
+                <th>Warranties (Prod / Perf)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="p in marketPanels" 
+                :key="p.model"
+                :class="{ highlighted: p.model.toLowerCase().includes(selectedPanel.id) }"
+              >
+                <td><strong>{{ p.model }}</strong></td>
+                <td><span class="tech-tag">{{ p.tech }}</span></td>
+                <td>{{ p.power }} W</td>
+                <td>{{ p.efficiency }}%</td>
+                <td class="text-rose">{{ p.degradation }}%</td>
+                <td>{{ p.warranty }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="table-note">* Row highlighted in gold indicates your currently active selected panel type.</p>
+        </div>
+
+        <!-- Battery Tab -->
+        <div v-if="activeTab === 'battery'" class="table-container animate-fade-in">
+          <table class="market-table">
+            <thead>
+              <tr>
+                <th>Panels Count (440W)</th>
+                <th>System Size</th>
+                <th>Target Household Profile</th>
+                <th>Battery Size (Standard)</th>
+                <th>Battery Size (Dynamic Tariff)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                v-for="b in batteryGuidelines" 
+                :key="b.panels"
+                :class="{ highlighted: activePanels >= b.minPanels && activePanels <= b.maxPanels }"
+              >
+                <td><strong>{{ b.panels }}</strong></td>
+                <td>{{ b.capacity }}</td>
+                <td>{{ b.profile }}</td>
+                <td><span class="bat-badge std">{{ b.batteryStd }}</span></td>
+                <td><span class="bat-badge dyn">{{ b.batteryDyn }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="table-note">* Row highlights dynamically based on your current installation size ({{ activePanels }} panels).</p>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+import Form from './components/Form.vue';
+import Calculator from './components/Calculator.vue';
+import Chart from './components/Chart.vue';
 
-// Region data
-const cities = [
-  { name: 'Leipzig', yield: 900 },
-  { name: 'Munich (München)', yield: 1050 },
-  { name: 'Berlin', yield: 930 },
-  { name: 'Hamburg', yield: 840 },
-  { name: 'Freiburg', yield: 1100 }
-];
-const selectedCity = ref(cities[0]);
-
-// Panel choices
+// Modern N-Type silicon modules
 const panelTypes = [
-  { id: 'topcon', name: 'High-Efficiency TOPCon', wattage: 400, price: 60, badge: 'TOPCon', class: 'badge-amber' },
-  { id: 'black', name: 'Full Black Design', wattage: 400, price: 66, badge: 'Black', class: 'badge-slate' },
-  { id: 'perc', name: 'Mainstream PERC', wattage: 400, price: 52, badge: 'PERC', class: 'badge-teal' }
+  { 
+    id: 'aiko', 
+    name: 'Aiko Solar Neostar 3S+', 
+    tech: 'N-Type ABC', 
+    wattage: 470, 
+    price: 180, 
+    degradation: 0.35, 
+    warranty: 30, 
+    structure: 'Glass-Glass', 
+    badge: 'Premium ABC', 
+    class: 'badge-amber' 
+  },
+  { 
+    id: 'luxor', 
+    name: 'Luxor Eco Line HJT', 
+    tech: 'N-Type HJT', 
+    wattage: 450, 
+    price: 160, 
+    degradation: 0.25, 
+    warranty: 30, 
+    structure: 'Glass-Glass', 
+    badge: 'Premium HJT', 
+    class: 'badge-teal' 
+  },
+  { 
+    id: 'jinko', 
+    name: 'Jinko Solar Tiger Neo', 
+    tech: 'N-Type TOPCon', 
+    wattage: 440, 
+    price: 60, 
+    degradation: 0.40, 
+    warranty: 25, 
+    structure: 'Glass-Foil', 
+    badge: 'Mainstream', 
+    class: 'badge-slate' 
+  },
+  { 
+    id: 'trina', 
+    name: 'Trina Solar Vertex S+', 
+    tech: 'N-Type TOPCon', 
+    wattage: 445, 
+    price: 62, 
+    degradation: 0.40, 
+    warranty: 25, 
+    structure: 'Glass-Glass', 
+    badge: 'Mainstream', 
+    class: 'badge-teal' 
+  },
+  { 
+    id: 'meyer', 
+    name: 'Meyer Burger Glass', 
+    tech: 'HJT', 
+    wattage: 380, 
+    price: 150, 
+    degradation: 0.25, 
+    warranty: 30, 
+    structure: 'Glass-Glass', 
+    badge: 'Ultra-Premium', 
+    class: 'badge-amber' 
+  }
 ];
+
 const selectedPanelId = ref(panelTypes[0].id);
 const selectedPanel = computed(() => panelTypes.find(p => p.id === selectedPanelId.value));
 
 // Input variables
-const numPanels = ref(50);
+const selectedModel = ref('self');
+const roofArea = ref(100);
+const firewallType = ref('shared');
+const numPanels = ref(40);
 const elecPrice = ref(0.35);
 const consumption = ref(25000);
 const installCost = ref(12000);
-const maintCost = ref(300);
 const longevity = ref(25);
 
-// Reactive node hover
-const hoveredNode = ref(null);
+// Battery parameters
+const includeBattery = ref(true);
+const batteryCapacity = ref(12.0);
+const tariffType = ref('dynamic');
 
-// Calculations
-const totalPanelCost = computed(() => selectedPanel.value.price * numPanels.value);
-const totalUpfrontCost = computed(() => totalPanelCost.value + installCost.value);
-const systemKwp = computed(() => (numPanels.value * selectedPanel.value.wattage) / 1000);
-const annualGeneration = computed(() => systemKwp.value * selectedCity.value.yield);
-const usableGeneration = computed(() => Math.min(annualGeneration.value, consumption.value));
-const grossSavings = computed(() => usableGeneration.value * elecPrice.value);
-const netSavings = computed(() => grossSavings.value - maintCost.value);
+// Reference Accordion states
+const showReference = ref(false);
+const activeTab = ref('panels');
 
+// Market data for reference tables (Section 3.1)
+const marketPanels = [
+  { model: 'Aiko Solar Neostar 3S+', tech: 'N-Type ABC', power: '455 - 485', efficiency: '23.8 - 24.3', degradation: '0.35', warranty: '25-30 years / 88.5% performance at year 30' },
+  { model: 'Luxor Eco Line HJT', tech: 'N-Type HJT', power: '450', efficiency: '23.4 - 23.6', degradation: '0.25', warranty: '30 years / 93.0% performance at year 30' },
+  { model: 'Astronergy Astro N7s', tech: 'N-Type TOPCon', power: '440 - 630', efficiency: '23.3', degradation: '0.40', warranty: '25 years / Linear degradation' },
+  { model: 'Jinko Solar Tiger Neo', tech: 'N-Type TOPCon', power: '415 - 445', efficiency: '23.0 - 23.2', degradation: '0.40', warranty: '25 years / Linear degradation' },
+  { model: 'Hyundai Energy CE-BF', tech: 'HJT / TOPCon', power: '430', efficiency: '23.0', degradation: '0.26', warranty: '30 years / Linear degradation' },
+  { model: 'JA Solar DeepBlue 4.0 Pro', tech: 'N-Type TOPCon', power: '460', efficiency: '22.8 - 23.0', degradation: '0.40', warranty: '25 years / Linear degradation' },
+  { model: 'LONGi Hi-MO X10', tech: 'N-Type TOPCon', power: '420 - 445', efficiency: '22.8 - 23.0', degradation: '0.40', warranty: '25 years / Linear degradation' },
+  { model: 'Canadian Solar TOPBiHiKu6', tech: 'N-Type TOPCon', power: '435', efficiency: '22.8', degradation: '0.40', warranty: '25 years / Bifacial yield +20%' },
+  { model: 'Trina Solar Vertex S+', tech: 'N-Type TOPCon', power: '440 - 455', efficiency: '22.5', degradation: '0.40', warranty: '25 years / 87.4% performance at year 25' },
+  { model: 'Meyer Burger Glass', tech: 'HJT', power: '370 - 395', efficiency: '20.7 - 20.9', degradation: '0.25', warranty: '30 years / 94.2% performance at year 25' }
+];
+
+// Battery guidelines reference (Section 6.3)
+const batteryGuidelines = [
+  { panels: '10 Panels', minPanels: 0, maxPanels: 14, capacity: '~4.4 kWp', profile: '1-2 Person Apartment (1.5k-2.5k kWh/yr)', batteryStd: '4.0 – 5.0 kWh', batteryDyn: '5.0 – 8.0 kWh' },
+  { panels: '20 Panels', minPanels: 15, maxPanels: 24, capacity: '~8.8 kWp', profile: '3-4 Person House (3.5k-5.0k kWh/yr)', batteryStd: '8.0 – 10.0 kWh', batteryDyn: '10.0 – 13.0 kWh' },
+  { panels: '30 Panels', minPanels: 25, maxPanels: 34, capacity: '~13.2 kWp', profile: '5+ Persons or Heat Pump (6.0k-10.0k kWh/yr)', batteryStd: '12.0 – 15.0 kWh', batteryDyn: '15.0 – 20.0 kWh' },
+  { panels: '40+ Panels', minPanels: 35, maxPanels: 999, capacity: '~17.6+ kWp', profile: 'Large Estate + EV + Heat Pump (>10.0k kWh/yr)', batteryStd: '16.0 – 20.0 kWh', batteryDyn: '20.0 – 30.0 kWh' }
+];
+
+/* 
+  Physical Space Layout & Setback Math (Section 4)
+  - Standard panel dimensions: 1.76m x 1.13m = 1.99 sqm
+  - Max theoretical density: roofArea / 2.0
+  - Saxon LBO setback:
+    - Glass-Glass (non-combustible): 0.30m from borders (effectively minor space loss, ~10% loss)
+    - Glass-Foil (combustible): 1.25m from borders (significant space loss, ~30% loss)
+    - None firewall: negligible loss (~5% loss for maintenance corridors)
+*/
+const maxFittingPanels = computed(() => {
+  const baseCount = Math.floor(roofArea.value / 2.0);
+  if (firewallType.value === 'none') {
+    return Math.max(1, Math.floor(baseCount * 0.90)); // 10% space loss for walkways
+  }
+  
+  if (selectedPanel.value.structure === 'Glass-Glass') {
+    return Math.max(1, Math.floor(baseCount * 0.85)); // 15% space loss with 0.3m setback
+  } else {
+    return Math.max(1, Math.floor(baseCount * 0.65)); // 35% space loss with 1.25m setback
+  }
+});
+
+// Auto-clamp panel count to fitting limits
+const activePanels = computed(() => {
+  return Math.min(numPanels.value, maxFittingPanels.value);
+});
+
+// Battery sizing recommendations (Section 6)
+const recommendedBatterySize = computed(() => {
+  const minRatio = 0.8;
+  const maxRatio = 1.5;
+  const targetKwp = systemKwp.value;
+  const baseRec = `${(targetKwp * minRatio).toFixed(1)} - ${(targetKwp * maxRatio).toFixed(1)} kWh`;
+  if (tariffType.value === 'dynamic') {
+    return `${baseRec} (+ 3kWh dynamic headroom)`;
+  }
+  return baseRec;
+});
+
+// System Calculations
+const systemKwp = computed(() => (activePanels.value * selectedPanel.value.wattage) / 1000);
+const totalPanelCost = computed(() => selectedPanel.value.price * activePanels.value);
+const grossUpfrontCost = computed(() => totalPanelCost.value + installCost.value);
+
+// Subsidies (Section 8.3 - Leipzig municipal rules)
+const solarSubsidy = computed(() => {
+  return Math.min(systemKwp.value * 300, 1200);
+});
+
+const batterySubsidy = computed(() => {
+  if (!includeBattery.value) return 0;
+  return Math.min(batteryCapacity.value * 200, 800);
+});
+
+const totalSubsidies = computed(() => solarSubsidy.value + batterySubsidy.value);
+const netUpfrontCost = computed(() => Math.max(0, grossUpfrontCost.value - totalSubsidies.value));
+
+// Generation & Self-consumption physics (Section 5 & 6)
+const annualGeneration = computed(() => systemKwp.value * 900);
+
+const selfConsumptionRate = computed(() => {
+  if (selectedModel.value === 'feed') return 0;
+  return includeBattery.value ? 0.70 : 0.30;
+});
+
+const usableSelfConsumedEnergy = computed(() => {
+  return Math.min(annualGeneration.value * selfConsumptionRate.value, consumption.value);
+});
+
+const exportedEnergy = computed(() => {
+  return Math.max(0, annualGeneration.value - usableSelfConsumedEnergy.value);
+});
+
+// Recurrent OPEX Cost Calculations (Section 7)
+const annualOPEX = computed(() => {
+  const mainInspection = 200;
+  const cleaning = activePanels.value * 2.0;
+  const insurance = 100;
+  const monitoring = 60;
+  return mainInspection + cleaning + insurance + monitoring;
+});
+
+// Year 1 Financial Yields
+const netSavingsYear1 = computed(() => {
+  let returns = 0;
+
+  if (selectedModel.value === 'feed') {
+    const first10Kwp = Math.min(systemKwp.value, 10);
+    const first10Returns = first10Kwp * 900 * 0.1235;
+    const remainingKwp = Math.max(0, systemKwp.value - 10);
+    const remainingReturns = remainingKwp * 900 * 0.1035;
+    returns = first10Returns + remainingReturns;
+  } else {
+    if (selectedModel.value === 'tenant') {
+      const tenantPrice = elecPrice.value * 0.90;
+      returns += usableSelfConsumedEnergy.value * (tenantPrice + 0.021);
+    } else {
+      returns += usableSelfConsumedEnergy.value * elecPrice.value;
+    }
+
+    returns += exportedEnergy.value * 0.082;
+
+    if (includeBattery.value && tariffType.value === 'dynamic') {
+      returns += 120;
+    }
+  }
+
+  return returns - annualOPEX.value;
+});
+
+// Mathematical multi-year lifecycle calculation
+const lifecycleData = computed(() => {
+  const years = [];
+  let cumulativeSavings = 0;
+  
+  for (let year = 0; year <= longevity.value; year++) {
+    let costThisYear = 0;
+    
+    if (year === 0) {
+      years.push({
+        year: 0,
+        cost: netUpfrontCost.value,
+        savings: 0
+      });
+      continue;
+    }
+
+    costThisYear += annualOPEX.value;
+
+    if (year === 12 && includeBattery.value) {
+      costThisYear += 3500;
+    }
+    if (year === 15) {
+      costThisYear += 2500;
+    }
+
+    const annualDegradationRate = selectedPanel.value.degradation / 100;
+    const degradationMultiplier = Math.max(0.1, 1 - (year * annualDegradationRate));
+    const rawSavingsThisYear = (netSavingsYear1.value + annualOPEX.value) * degradationMultiplier;
+
+    cumulativeSavings += rawSavingsThisYear;
+
+    const previousCost = years[year - 1].cost;
+    const totalCostAccum = previousCost + costThisYear;
+
+    years.push({
+      year,
+      cost: year === 0 ? netUpfrontCost.value : totalCostAccum,
+      savings: cumulativeSavings
+    });
+  }
+
+  return years;
+});
+
+// Detect precise fractional break-even year
 const breakEvenYears = computed(() => {
-  if (netSavings.value <= 0) return Infinity;
-  return totalUpfrontCost.value / netSavings.value;
+  if (netSavingsYear1.value <= 0) return Infinity;
+
+  const data = lifecycleData.value;
+  let beYear = Infinity;
+
+  for (let i = 1; i < data.length; i++) {
+    const prev = data[i - 1];
+    const curr = data[i];
+
+    if (prev.savings < prev.cost && curr.savings >= curr.cost) {
+      const costSpread = curr.cost - prev.cost;
+      const savingsSpread = curr.savings - prev.savings;
+      const progressToGoal = prev.cost - prev.savings;
+      
+      const fraction = progressToGoal / (savingsSpread - costSpread);
+      beYear = prev.year + fraction;
+      break;
+    }
+  }
+
+  return beYear;
 });
 
 // Break-even status text & styles
 const breakEvenStatusClass = computed(() => {
-  if (netSavings.value <= 0) return 'status-negative';
+  if (netSavingsYear1.value <= 0) return 'status-negative';
   if (breakEvenYears.value > longevity.value) return 'status-warning';
   return 'status-positive';
 });
 
 const breakEvenTitle = computed(() => {
-  if (netSavings.value <= 0) return 'Non-Viable';
+  if (netSavingsYear1.value <= 0) return 'Non-Viable';
   if (breakEvenYears.value > longevity.value) return 'Late Break-Even';
   return `${breakEvenYears.value.toFixed(1)} Years Break-Even`;
 });
 
 const breakEvenDescription = computed(() => {
-  if (netSavings.value <= 0) {
+  if (netSavingsYear1.value <= 0) {
     return 'Your maintenance cost exceeds electricity savings. The system will never pay for itself.';
   }
   if (breakEvenYears.value > longevity.value) {
     return `The system takes ${breakEvenYears.value.toFixed(1)} years to break even, which exceeds the panels' ${longevity.value}-year lifespan.`;
   }
-  return `Your system will recover all upfront costs in ${breakEvenYears.value.toFixed(1)} years. Afterwards, your solar production is pure profit.`;
-});
-
-// Graph Plotting Constants
-const paddingX = 40;
-const paddingY = 20;
-const width = 440;
-const height = 190; // relative coordinates mapping to viewBox (0, 0, 500, 240)
-
-// Max Value for Y scaling in Chart
-const maxVal = computed(() => {
-  const maxSavings = grossSavings.value * longevity.value;
-  const maxCosts = totalUpfrontCost.value + (maintCost.value * longevity.value);
-  return Math.max(maxSavings, maxCosts, 10000) * 1.15;
-});
-
-// Transform X year into SVG Coordinate
-function getX(year) {
-  return paddingX + (year / longevity.value) * width;
-}
-
-// Transform Y monetary value into SVG Coordinate
-function getY(val) {
-  const percent = val / maxVal.value;
-  // SVG coordinates: Y starts at top (0), goes down. High value -> Low Y.
-  return paddingY + height * (1 - percent);
-}
-
-// SVG Path for Cumulative Net Savings
-const savingsPath = computed(() => {
-  let path = `M ${getX(0)} ${getY(0)}`;
-  for (let year = 1; year <= longevity.value; year++) {
-    const accumSavings = year * netSavings.value;
-    path += ` L ${getX(year)} ${getY(accumSavings)}`;
-  }
-  return path;
-});
-
-// SVG Path for Cumulative Total Cost
-const costsPath = computed(() => {
-  let path = `M ${getX(0)} ${getY(totalUpfrontCost.value)}`;
-  for (let year = 1; year <= longevity.value; year++) {
-    const accumCosts = totalUpfrontCost.value + (year * maintCost.value);
-    path += ` L ${getX(year)} ${getY(accumCosts)}`;
-  }
-  return path;
-});
-
-// Coordinates of the Break-Even intersection
-const breakEvenCoords = computed(() => {
-  if (breakEvenYears.value > longevity.value) return { x: 0, y: 0 };
-  const costAtBreakEven = totalUpfrontCost.value + (breakEvenYears.value * maintCost.value);
-  return {
-    x: getX(breakEvenYears.value),
-    y: getY(costAtBreakEven)
-  };
-});
-
-// Nodes for the interactive graph (sample at 0%, 25%, 50%, 75%, 100% of lifespan)
-const chartNodes = computed(() => {
-  const nodes = [];
-  const yearsToSample = [
-    0,
-    Math.round(longevity.value * 0.25),
-    Math.round(longevity.value * 0.5),
-    Math.round(longevity.value * 0.75),
-    longevity.value
-  ];
-
-  yearsToSample.forEach(year => {
-    // Costs node
-    const costVal = totalUpfrontCost.value + (year * maintCost.value);
-    nodes.push({
-      year,
-      x: getX(year),
-      y: getY(costVal),
-      val: costVal,
-      type: 'costs'
-    });
-    // Savings node
-    const savingsVal = year * netSavings.value;
-    nodes.push({
-      year,
-      x: getX(year),
-      y: getY(savingsVal),
-      val: savingsVal,
-      type: 'savings'
-    });
-  });
-
-  return nodes;
-});
-
-// Tooltip placement logic
-const tooltipX = computed(() => {
-  if (!hoveredNode.value) return 0;
-  return hoveredNode.value.x > 380 ? hoveredNode.value.x - 130 : hoveredNode.value.x + 10;
-});
-
-const tooltipY = computed(() => {
-  if (!hoveredNode.value) return 0;
-  return hoveredNode.value.y > 180 ? hoveredNode.value.y - 75 : hoveredNode.value.y - 15;
+  return `Your system will recover all upfront and recurrent costs in ${breakEvenYears.value.toFixed(1)} years. Afterwards, your solar production is pure profit.`;
 });
 </script>
 
 <style scoped>
 .app-container {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 3rem 1.5rem;
+  padding: 2.5rem 1.5rem;
 }
 
 .app-header {
   text-align: center;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .logo-area {
@@ -435,21 +506,21 @@ const tooltipY = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .logo-area h1 {
-  font-size: 2.5rem;
+  font-size: 2.25rem;
   font-weight: 800;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
   background: linear-gradient(135deg, #f59e0b 0%, #ffedd5 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .sun-icon {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   color: var(--primary);
   filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.4));
 }
@@ -459,639 +530,249 @@ const tooltipY = computed(() => {
   to { transform: rotate(360deg); }
 }
 .animate-spin-slow {
-  animation: spin-slow 24s linear infinite;
+  animation: spin-slow 30s linear infinite;
 }
 
 .subtitle {
   color: var(--text-secondary);
-  font-size: 1.1rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
-}
-
-.calculator-grid {
-  display: grid;
-  grid-template-columns: 1.1fr 1.2fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-.card {
-  padding: 2.25rem;
-}
-
-.section-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 1.25rem;
-}
-
-.number-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 8px;
-  background: var(--primary-glow);
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 0.95rem;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.number-badge.secondary {
-  background: var(--secondary-glow);
-  color: var(--secondary);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.section-title-group h2 {
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.form-group {
-  margin-bottom: 1.85rem;
-}
-
-.form-group.half {
-  width: 48%;
-}
-
-.form-row {
-  display: flex;
-  justify-content: space-between;
-}
-
-label {
-  display: block;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 0.65rem;
-}
-
-.label-val-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.35rem;
-}
-
-.value-display {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-/* Beautiful custom selectors */
-.select-wrapper {
-  position: relative;
-}
-
-.select-wrapper::after {
-  content: '↓';
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  position: absolute;
-  right: 1.15rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-select, input[type="number"] {
-  width: 100%;
-  padding: 0.85rem 1.15rem;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  font-family: inherit;
-  transition: all var(--transition-fast);
-  appearance: none;
-}
-
-select:focus, input[type="number"]:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-}
-
-/* Range slider styling */
-.range-slider {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  outline: none;
-  margin: 0.6rem 0 0.4rem;
-}
-
-.range-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 50%;
-  background: var(--primary);
-  cursor: pointer;
-  border: 2px solid #03001e;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-  transition: transform var(--transition-fast);
-}
-
-.range-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
-
-.slider-ticks {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 1.05rem;
   font-weight: 500;
 }
 
-/* Panel selection grid */
-.panel-type-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+/* Fiscal Headers */
+.fiscal-header-badges {
+  display: flex;
+  justify-content: flex-end;
   gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-.panel-card {
-  padding: 1rem 0.85rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.panel-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
-}
-
-.panel-card.active {
-  background: rgba(245, 158, 11, 0.05);
-  border-color: var(--primary);
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
-}
-
-.panel-card-header {
+.fiscal-badge {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.6rem;
-}
-
-.panel-badge {
-  font-size: 0.65rem;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.15rem 0.45rem;
-  border-radius: 5px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
-.badge-amber {
-  background: var(--primary-glow);
-  color: var(--primary);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.badge-slate {
-  background: rgba(148, 163, 184, 0.15);
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.badge-teal {
-  background: var(--secondary-glow);
-  color: var(--secondary);
+.fiscal-badge.vat {
+  background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.panel-price {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.panel-name {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 0.15rem;
-  line-height: 1.25;
-}
-
-.panel-power {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-/* Input numbers wrapping */
-.input-prefix-wrapper {
-  position: relative;
-}
-
-.input-prefix-wrapper .prefix {
-  position: absolute;
-  left: 1.15rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-.input-prefix-wrapper input {
-  padding-left: 2.25rem;
-}
-
-/* RESULTS & FORECASTS */
-.results-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.15rem;
-  margin-bottom: 1.75rem;
-}
-
-.metric-box {
-  padding: 1.5rem;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.metric-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.45rem;
-}
-
-.metric-val {
-  display: block;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  margin-bottom: 0.35rem;
-}
-
-.unit {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.metric-sub {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.text-primary-color {
-  color: var(--primary);
-}
-
-.text-secondary-color {
-  color: var(--secondary);
-  text-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
-}
-
-.text-danger {
-  color: var(--danger);
-}
-
-.metric-box.warning {
-  border-color: rgba(239, 68, 68, 0.15);
-  background: rgba(239, 68, 68, 0.02);
-}
-
-/* Shield indicators for break-even */
-.break-even-shield {
-  display: flex;
-  gap: 1.15rem;
-  padding: 1.25rem 1.5rem;
-  border-radius: 16px;
-  align-items: center;
-}
-
-.shield-icon {
-  flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.shield-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.shield-text h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.15rem;
-}
-
-.shield-text p {
-  font-size: 0.82rem;
-  line-height: 1.35;
-}
-
-.status-positive {
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.25);
-}
-.status-positive .shield-icon {
-  background: var(--secondary-glow);
-  color: var(--secondary);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
-}
-.status-positive .shield-text h3 {
-  color: var(--secondary);
-}
-.status-positive .shield-text p {
-  color: #cbd5e1;
-}
-
-.status-warning {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-}
-.status-warning .shield-icon {
-  background: var(--primary-glow);
-  color: var(--primary);
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
-}
-.status-warning .shield-text h3 {
-  color: var(--primary);
-}
-.status-warning .shield-text p {
-  color: #cbd5e1;
-}
-
-.status-negative {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-.status-negative .shield-icon {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--danger);
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
-}
-.status-negative .shield-text h3 {
-  color: var(--danger);
-}
-.status-negative .shield-text p {
-  color: #fca5a5;
-}
-
-/* CHART CONTAINER */
-.chart-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.chart-card h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.15rem;
-}
-
-.chart-desc {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-bottom: 1.5rem;
-}
-
-.svg-container {
-  position: relative;
-  width: 100%;
-}
-
-.roi-chart {
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.grid-line {
-  stroke: rgba(255, 255, 255, 0.04);
-  stroke-width: 1;
-}
-.grid-line.border {
-  stroke: rgba(255, 255, 255, 0.15);
-  stroke-width: 1.5;
-}
-
-.chart-path {
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.savings-line {
-  stroke: var(--secondary);
-  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
-}
-
-.costs-line {
-  stroke: var(--danger);
-  opacity: 0.75;
-}
-
-/* pulsing intersection dot */
-.intersection-dot-group {
-  transition: transform var(--transition-normal);
-}
-
-.pulse-ring {
-  fill: var(--primary-glow);
-  stroke: var(--primary);
-  stroke-width: 1.5;
-  animation: pulse-glow 2s infinite;
-  transform-origin: center;
-}
-
-.center-dot {
-  fill: var(--text-primary);
-  stroke: var(--primary);
-  stroke-width: 2.5;
-}
-
-@keyframes pulse-glow {
-  0% { r: 5; opacity: 1; }
-  100% { r: 12; opacity: 0; }
-}
-
-/* chart interactive node dots */
-.node-dot {
-  fill: #03001e;
-  stroke-width: 2;
-  cursor: pointer;
-  transition: r var(--transition-fast), stroke-width var(--transition-fast);
-}
-
-.node-dot.costs {
-  stroke: var(--danger);
-}
-
-.node-dot.savings {
-  stroke: var(--secondary);
-}
-
-.node-dot:hover {
-  r: 6.5;
-  stroke-width: 3.5;
-  fill: var(--text-primary);
-}
-
-/* Chart Tooltip */
-.chart-tooltip-wrapper {
-  overflow: visible;
-  pointer-events: none;
-}
-
-.chart-tooltip {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  pointer-events: none;
-  animation: fade-in 0.15s ease-out;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.tooltip-year {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-}
-
-.tooltip-val {
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.tooltip-val.savings {
   color: var(--secondary);
 }
 
-.tooltip-val.costs {
-  color: var(--danger);
-}
-
-.axis-label {
-  fill: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-anchor: middle;
-}
-
-.text-right {
-  text-anchor: end;
-}
-
-/* Legend styling */
-.legend {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  margin-top: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.legend-line {
-  width: 1.25rem;
-  height: 3px;
-  border-radius: 2px;
-}
-
-.legend-line.costs {
-  background: var(--danger);
-  border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
-}
-
-.legend-line.savings {
+.fiscal-badge.vat .f-dot {
   background: var(--secondary);
 }
 
-.legend-dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: var(--text-primary);
-  border: 2px solid var(--primary);
+.fiscal-badge.tax-exempt {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--primary);
 }
 
-/* Responsive grid layout */
-@media (max-width: 900px) {
+.fiscal-badge.tax-exempt .f-dot {
+  background: var(--primary);
+}
+
+.f-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/* Layout Grid */
+.calculator-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1.15fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.results-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* REFERENCE SECTION */
+.reference-section {
+  margin-top: 2rem;
+  padding: 1.5rem 2rem;
+}
+
+.reference-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.reference-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.book-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--primary);
+  transition: transform var(--transition-normal);
+}
+
+.book-icon.rotate {
+  transform: rotate(180deg);
+}
+
+.toggle-btn {
+  background: var(--btn-secondary-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.reference-content {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 1.5rem;
+}
+
+.tab-selectors {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.tab-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  padding: 0.5rem 1.15rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--primary-glow);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.market-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.market-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.market-table tr.highlighted {
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.market-table tr.highlighted td {
+  border-top: 1px solid rgba(245, 158, 11, 0.15);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.tech-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.text-rose {
+  color: #fda4af;
+}
+
+.bat-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.bat-badge.std {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.bat-badge.dyn {
+  background: var(--secondary-glow);
+  color: var(--secondary);
+}
+
+.table-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Responsive Layout */
+@media (max-width: 1024px) {
   .calculator-grid {
     grid-template-columns: 1fr;
   }
-  
-  .app-container {
-    padding: 2rem 1rem;
-  }
 }
 
-@media (max-width: 500px) {
-  .panel-type-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-row {
+@media (max-width: 640px) {
+  .tab-selectors {
     flex-direction: column;
-    gap: 1.25rem;
-  }
-  
-  .form-group.half {
-    width: 100%;
   }
 }
 </style>
