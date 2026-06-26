@@ -11,7 +11,25 @@
       <p class="subtitle">German Solar ROI & Technical Analysis (2026 Standards)</p>
     </header>
 
-    <main class="calculator-grid">
+    <!-- MAIN TABS SECTION -->
+    <div class="main-tabs">
+      <button 
+        class="tab-trigger" 
+        :class="{ active: currentMainTab === 'calculator' }" 
+        @click="currentMainTab = 'calculator'"
+      >
+        📊 Interactive ROI Calculator
+      </button>
+      <button 
+        class="tab-trigger" 
+        :class="{ active: currentMainTab === 'doc' }" 
+        @click="currentMainTab = 'doc'"
+      >
+        📖 Market Research & LBO Guidelines
+      </button>
+    </div>
+
+    <main class="calculator-grid" v-if="currentMainTab === 'calculator'">
       <!-- INPUT SECTION COMPONENT -->
       <Form
         v-model:selectedPanelId="selectedPanelId"
@@ -76,6 +94,9 @@
         />
       </div>
     </main>
+
+    <!-- DOCUMENTATION VIEW TAB -->
+    <Doc v-if="currentMainTab === 'doc'" />
 
     <!-- REFERENCE DATA SECTION -->
     <section class="card glass reference-section animate-fade-in">
@@ -176,6 +197,9 @@ import { ref, computed } from 'vue';
 import Form from './components/Form.vue';
 import Calculator from './components/Calculator.vue';
 import Chart from './components/Chart.vue';
+import Doc from './components/Doc.vue';
+
+const currentMainTab = ref('calculator');
 
 // Modern N-Type silicon modules
 const panelTypes = [
@@ -490,6 +514,40 @@ const breakEvenDescription = computed(() => {
 </script>
 
 <style scoped>
+.main-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 1rem;
+}
+
+.tab-trigger {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-trigger:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tab-trigger.active {
+  background: var(--primary-glow);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
 .app-container {
   max-width: 1300px;
   margin: 0 auto;
